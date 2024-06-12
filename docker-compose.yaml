@@ -1,0 +1,40 @@
+version: "1"
+
+services:
+  users:
+    build: .
+    environment:
+      PG_DB: "users-dev"
+      PG_USER: "srv-users"
+      PG_PASS: "srv-users-pswd"
+    restart: always
+    command: bash -c "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+    ports:
+     - "4000:8000"
+
+  db:
+    image: postgres:16.3
+    environment:
+      POSTGRES_DB: "users-dev"
+      POSTGRES_USER: "srv-users"
+      POSTGRES_PASSWORD: "srv-users-pswd"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - ../2. Init Database:/docker-entrypoint-initdb.d  
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U srv-users -d users-dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    
+volumes:
+  db-data:
